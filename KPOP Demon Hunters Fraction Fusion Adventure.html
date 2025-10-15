@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Pop Demon Hunter: Fraction Fusion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons for aesthetic flair -->
+    <script type="module" src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #e0e0ff; /* Light, neon text */
+            /* Full screen and cosmic gradient background */
+            background-image: linear-gradient(135deg, #0d0a1b 0%, #3a0d4c 100%); 
+            min-height: 100vh; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .neon-glow {
+            box-shadow: 0 0 5px #f472b6, 0 0 10px #ec4899, 0 0 15px #db2777; /* Pink/Purple Neon */
+        }
+        .neon-text {
+            color: #f472b6;
+            text-shadow: 0 0 5px rgba(244, 114, 182, 0.7);
+        }
+        .btn-primary {
+            background-color: #ec4899;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #db2777;
+            box-shadow: 0 0 8px #db2777;
+        }
+        .btn-secondary {
+            background-color: #4c1d95;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #5b21b6;
+            box-shadow: 0 0 8px #5b21b6;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="app-container" class="w-full max-w-2xl lg:max-w-3xl bg-gray-900/90 backdrop-blur-sm p-6 md:p-10 rounded-xl border border-pink-600/50 neon-glow">
+        
+        <!-- Header & Theme -->
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-extrabold neon-text tracking-widest uppercase">
+                Fantom Hunters: Fraction Fusion
+            </h1>
+            <p class="text-gray-400 mt-2">Calculate the required Energy Fusion to defeat the Dimensional Demon.</p>
+        </header>
+
+        <!-- Title Screen -->
+        <div id="title-screen" class="p-6 md:p-10 text-center bg-gray-800/80 rounded-lg border border-purple-500/50 fade-in">
+            <!-- New Image for Title Screen -->
+            <img id="title-image" src="https://placehold.co/600x250/1e0a3b/f472b6?text=K-POP+DEMON+HUNTERS" class="w-full h-auto rounded-lg mb-6 object-cover neon-glow" alt="K-Pop Demon Hunters Group">
+            
+            <h2 class="text-3xl font-extrabold neon-text tracking-wider uppercase mb-4">
+                ENERGY FUSION INITIATED
+            </h2>
+            <p id="intro-text" class="text-gray-300 mb-6">
+                The Dimensional Demons attack requires a precise Fraction Fusion Calculation to power your group's ultimate attack. Fail, and the world will lose the rhythm!
+            </p>
+            
+            <!-- Start Game Button (now centered after removing Read Intro button) -->
+            <button id="start-btn" onclick="startGame()" class="btn-primary py-3 px-8 rounded-lg font-bold uppercase tracking-wider text-white">
+                <i data-lucide="play" class="inline w-5 h-5 mr-2"></i> Start Mission
+            </button>
+        </div>
+
+
+        <!-- Game Card (Initially hidden) -->
+        <div id="game-card" class="bg-gray-800/80 p-6 rounded-lg border border-purple-500/50 hidden">
+
+             <!-- Dynamic Demon Image -->
+            <img id="demon-image" src="" class="w-full max-w-xs md:max-w-sm h-auto mx-auto mb-4 rounded-lg neon-glow border border-pink-500" alt="Dimensional Demon Threat">
+            
+            <!-- Level and Question -->
+            <div class="text-center mb-6">
+                <p id="level-display" class="text-lg font-semibold text-purple-300">Level 1: Dimensional Threat - Minor</p>
+                <div class="text-5xl md:text-6xl font-extrabold my-4 text-white flex justify-center items-center">
+                    <span id="fraction1" class="neon-text"></span>
+                    <span class="mx-4">×</span>
+                    <span id="fraction2" class="neon-text"></span>
+                </div>
+                
+                <p class="text-gray-400 mt-2">Required Fusion Energy (Answer):</p>
+            </div>
+
+            <!-- Input & Buttons -->
+            <div class="flex flex-col gap-4">
+                <input type="text" id="answer-input" placeholder="Enter your answer (e.g., 3/4 or 5)" class="w-full p-3 rounded-lg bg-gray-700 border-2 border-pink-500/50 text-white focus:outline-none focus:border-pink-400 transition-colors">
+                
+                <div class="flex space-x-4">
+                    <button id="submit-btn" onclick="checkAnswer()" class="btn-primary flex-1 py-3 rounded-lg font-bold uppercase tracking-wider text-white">
+                        <i data-lucide="zap" class="inline w-5 h-5 mr-2"></i> Execute Attack
+                    </button>
+                    <button id="hint-btn" onclick="showHint()" class="btn-secondary w-1/4 py-3 rounded-lg font-bold uppercase text-white">
+                        <i data-lucide="lightbulb" class="inline w-5 h-5"></i> Hint
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hint Display -->
+            <div id="hint-area" class="mt-4 p-4 bg-purple-900/50 rounded-lg hidden border-l-4 border-purple-400">
+                <p class="text-sm font-semibold text-purple-300 mb-2 flex items-center">
+                    <i data-lucide="info" class="w-4 h-4 mr-1"></i> Calculation Guidance:
+                </p>
+                <p id="hint-text" class="text-sm text-gray-200"></p>
+                <p id="hint-level" class="text-xs mt-2 text-purple-400"></p>
+            </div>
+
+            <!-- Status/Feedback Message -->
+            <div id="message-box" class="mt-6 p-3 rounded-lg text-center font-bold hidden fade-in">
+                <!-- Content will be injected here -->
+            </div>
+            
+        </div>
+
+    </div>
+
+    <script>
+        // Global K-Pop Demon Hunter (KD H-Q) Data
+        let currentLevel = 0;
+        let hintsShown = 0;
+        let maxHints = 3;
+        
+        // Image URLs based on difficulty
+        const DEMON_IMAGES = {
+            MINOR: "https://placehold.co/400x150/4c1d95/e0e0ff?text=Minor+Dimensional+Threat", // Purple
+            MODERATE: "https://placehold.co/400x150/881337/f472b6?text=Spectral+Entity+Encounter", // Dark Red/Pink
+            BOSS: "https://placehold.co/400x150/db2777/ffffff?text=DEMON+KING+FINAL+BOSS" // Intense Pink/White
+        };
+
+        // Define the 10 problems with graduated difficulty and hints
+        const problems = [
+            // 1. Whole number x Unit Fraction (EASY)
+            {
+                f1: '1/2', f2: '4', ans: '2',
+                levelText: 'Level 1/10: Dimensional Threat - Minor (Whole Number)',
+                hints: [
+                    "Hint 1: Write the whole number '4' as a fraction: 4/1. Now multiply numerators and denominators.",
+                    "Hint 2: Multiplication: (1 × 4) / (2 × 1) = 4/2.",
+                    "Hint 3: Simplify the result: Divide the numerator (4) by the denominator (2)."
+                ],
+                image: DEMON_IMAGES.MINOR
+            },
+            // 2. Unit Fraction x Unit Fraction (EASY)
+            {
+                f1: '1/3', f2: '1/4', ans: '1/12',
+                levelText: 'Level 2/10: Shadow Echo - Low Priority (Simple Fraction)',
+                hints: [
+                    "Hint 1: Multiply the numerators (1 × 1) straight across. Then, multiply the denominators (3 × 4) straight across.",
+                    "Hint 2: The product is 1/12. Check if the numerator and denominator share any common factors other than 1.",
+                    "Hint 3: This fraction is already in simplest form. The final answer is 1/12."
+                ],
+                image: DEMON_IMAGES.MINOR
+            },
+            // 3. Fraction x Whole Number (EASY/MEDIUM - Whole number simplification)
+            {
+                f1: '3/4', f2: '8', ans: '6',
+                levelText: 'Level 3/10: Chrono Rift - Low Priority (Whole Number)',
+                hints: [
+                    "Hint 1: Remember 8 is 8/1. Multiply (3 × 8) / (4 × 1). The product is 24/4.",
+                    "Hint 2: You can simplify before multiplying: Look at 4 and 8. Divide both by 4 (4/4=1 and 8/4=2). Now the problem is 3/1 × 2/1.",
+                    "Hint 3: Simplify the resulting fraction 24/4 by dividing 24 by 4."
+                ],
+                image: DEMON_IMAGES.MINOR
+            },
+            // 4. Fraction x Fraction (MEDIUM - No simplification needed)
+            {
+                f1: '2/3', f2: '4/5', ans: '8/15',
+                levelText: 'Level 4/10: Crimson Surge - Moderate Threat',
+                hints: [
+                    "Hint 1: Perform the multiplication: (2 × 4) for the numerator and (3 × 5) for the denominator.",
+                    "Hint 2: The result is 8/15. Check the factors of 8 ({1, 2, 4, 8}) and 15 ({1, 3, 5, 15}).",
+                    "Hint 3: Since 1 is the only common factor between 8 and 15, 8/15 is the final answer."
+                ],
+                image: DEMON_IMAGES.MODERATE
+            },
+            // 5. Fraction x Fraction (MEDIUM - Simple simplification needed)
+            {
+                f1: '3/5', f2: '5/6', ans: '1/2',
+                levelText: 'Level 5/10: Plasma Barrier - Moderate Threat (Cancellation)',
+                hints: [
+                    "Hint 1: Look for opportunities to 'cross-cancel' the 5s (they become 1). You are left with 3/1 × 1/6.",
+                    "Hint 2: Now, look at 3 and 6. Divide both by 3. This changes the problem to 1/1 × 1/2.",
+                    "Hint 3: Multiply the simplified fractions: (1 × 1) / (1 × 2). The final product is 1/2."
+                ],
+                image: DEMON_IMAGES.MODERATE
+            },
+            // 6. Fraction x Fraction (MEDIUM - No simplification)
+            {
+                f1: '4/7', f2: '2/3', ans: '8/21',
+                levelText: 'Level 6/10: Void Hunter - Moderate Threat',
+                hints: [
+                    "Hint 1: Multiply the numerators: 4 × 2. Multiply the denominators: 7 × 3.",
+                    "Hint 2: The product is 8/21. The factors of 8 are {1, 2, 4, 8}. The factors of 21 are {1, 3, 7, 21}.",
+                    "Hint 3: Since only 1 is a common factor, 8/21 is the final simplified answer."
+                ],
+                image: DEMON_IMAGES.MODERATE
+            },
+            // 7. Fraction x Fraction (HARDER - Double cancellation)
+            {
+                f1: '5/8', f2: '4/15', ans: '1/6',
+                levelText: 'Level 7/10: Spectral Sentinel - High Priority (Advanced Cancellation)',
+                hints: [
+                    "Hint 1: Look at 5 and 15 (diagonally). Look at 4 and 8 (diagonally). Simplify both pairs by dividing by their greatest common factor.",
+                    "Hint 2: 5 and 15 simplify to 1 and 3 (divide by 5). 4 and 8 simplify to 1 and 2 (divide by 4). The new problem is 1/2 × 1/3.",
+                    "Hint 3: Multiply the simplified fractions: (1 × 1) / (2 × 3). The final answer is 1/6."
+                ],
+                image: DEMON_IMAGES.MODERATE
+            },
+            // 8. Fraction x Fraction (HARDER - Large numbers, tricky simplification)
+            {
+                f1: '9/10', f2: '5/18', ans: '1/4',
+                levelText: 'Level 8/10: Abyssal Lord - High Priority Target',
+                hints: [
+                    "Hint 1: Use cancellation. 9 and 18 can be divided by 9 (gives 1 and 2). 5 and 10 can be divided by 5 (gives 1 and 2).",
+                    "Hint 2: The new problem is 1/2 × 1/2.",
+                    "Hint 3: Multiply the simplified fractions: (1 × 1) / (2 × 2). The final answer is 1/4."
+                ],
+                image: DEMON_IMAGES.BOSS
+            },
+            // 9. Fraction x Fraction (HARDER - Result is improper fraction, simplified)
+            {
+                f1: '15/16', f2: '8/5', ans: '3/2',
+                levelText: 'Level 9/10: Dimensional Catastrophe - Extreme Threat',
+                hints: [
+                    "Hint 1: Use cancellation! 15 and 5 simplify to 3 and 1. 8 and 16 simplify to 1 and 2.",
+                    "Hint 2: The new problem is 3/2 × 1/1. The result is 3/2.",
+                    "Hint 3: The answer 3/2 is an improper fraction (1 and 1/2). Since we are providing the simplest fractional form, 3/2 is the correct format."
+                ],
+                image: DEMON_IMAGES.BOSS
+            },
+            // 10. Fraction x Fraction (HARDEST - Requires multiple simplification steps)
+            {
+                f1: '6/7', f2: '21/24', ans: '3/4',
+                levelText: 'Level 10/10: Final Boss: The Demon King (Ultimate Fusion Required)',
+                hints: [
+                    "Hint 1: Use cancellation. 6 and 24 can both be divided by 6 (gives 1 and 4). 7 and 21 can both be divided by 7 (gives 1 and 3).",
+                    "Hint 2: The new problem is 1/1 × 3/4.",
+                    "Hint 3: The final product is 3/4. Since 3 and 4 only share a common factor of 1, this is the final simplified answer."
+                ],
+                image: DEMON_IMAGES.BOSS
+            }
+        ];
+
+        // Utility to find Greatest Common Divisor (GCD) for simplification
+        function gcd(a, b) {
+            return b ? gcd(b, a % b) : a;
+        }
+
+        // Utility to simplify a fraction
+        function simplify(numerator, denominator) {
+            if (denominator === 0) return 'Error';
+            if (numerator === 0) return '0';
+            
+            // Handle whole number
+            if (numerator % denominator === 0) {
+                return String(numerator / denominator);
+            }
+
+            const common = gcd(numerator, denominator);
+            return (numerator / common) + '/' + (denominator / common);
+        }
+
+        // Utility to parse user input (e.g., "3/4" or "5")
+        function parseInput(input) {
+            const parts = String(input).trim().split('/');
+            if (parts.length === 2) {
+                // Return simplified fraction string (e.g., "1/2")
+                return simplify(parseInt(parts[0]), parseInt(parts[1]));
+            }
+            if (parts.length === 1 && !isNaN(parseInt(parts[0]))) {
+                // Return simplified whole number string (e.g., "5")
+                return String(parseInt(parts[0]));
+            }
+            return null; // Invalid format
+        }
+
+        // Function to load the current level's problem
+        function loadLevel() {
+            if (currentLevel >= problems.length) {
+                document.getElementById('level-display').textContent = 'Mission Complete! All 10 Demons Defeated!';
+                document.getElementById('game-card').innerHTML = '<p class="text-center text-xl font-bold text-green-400 fade-in">Congratulations, Phantom Hunter! You have achieved maximum Energy Fusion and saved the dimension!</p>';
+                return;
+            }
+
+            const problem = problems[currentLevel];
+            
+            // Update Demon Image Source
+            document.getElementById('demon-image').src = problem.image;
+            document.getElementById('demon-image').alt = problem.levelText;
+            
+            document.getElementById('level-display').textContent = problem.levelText;
+            document.getElementById('fraction1').textContent = problem.f1;
+            document.getElementById('fraction2').textContent = problem.f2;
+            document.getElementById('answer-input').value = '';
+            document.getElementById('hint-area').classList.add('hidden');
+            document.getElementById('message-box').classList.add('hidden');
+            hintsShown = 0;
+            updateHintButton();
+        }
+
+        // Function to check the user's answer
+        function checkAnswer() {
+            const problem = problems[currentLevel];
+            const input = document.getElementById('answer-input').value;
+            const simplifiedInput = parseInput(input);
+            
+            const messageBox = document.getElementById('message-box');
+            messageBox.classList.remove('hidden', 'bg-red-900', 'bg-green-900', 'border-red-600', 'border-green-600');
+            messageBox.classList.add('fade-in');
+
+            if (simplifiedInput === problem.ans) {
+                // Correct Answer
+                messageBox.classList.add('bg-green-900', 'border-green-600');
+                messageBox.innerHTML = '<i data-lucide="check-circle" class="inline w-5 h-5 mr-2"></i> SUCCESS! Energy Fusion Complete! Moving to next Dimensional Threat.';
+                
+                // Advance level after a short delay
+                setTimeout(() => {
+                    currentLevel++;
+                    loadLevel();
+                }, 1500);
+
+            } else {
+                // Incorrect Answer
+                messageBox.classList.add('bg-red-900', 'border-red-600');
+                messageBox.innerHTML = '<i data-lucide="x-circle" class="inline w-5 h-5 mr-2"></i> ERROR! Attack Failed! Review your calculation and try again, or use a hint.';
+                
+                // Clear the input but keep the focus
+                document.getElementById('answer-input').value = '';
+                document.getElementById('answer-input').focus();
+            }
+            
+            // Re-render lucide icons in the message box (needed when content changes)
+            lucide.createIcons();
+        }
+
+        // Function to display the next hint
+        function showHint() {
+            const problem = problems[currentLevel];
+            const hintArea = document.getElementById('hint-area');
+            const hintText = document.getElementById('hint-text');
+            const hintLevel = document.getElementById('hint-level');
+
+            if (hintsShown < maxHints) {
+                // Display the next hint
+                hintText.textContent = problem.hints[hintsShown];
+                hintLevel.textContent = `Hint Level: ${hintsShown + 1} / ${maxHints}`;
+                hintArea.classList.remove('hidden');
+                hintsShown++;
+            } else {
+                // All hints used
+                hintText.textContent = "All guidance used! Focus on the formula: multiply numerators, multiply denominators, and simplify the final fraction.";
+                hintLevel.textContent = `Hint Level: ${maxHints} / ${maxHints} (MAX)`;
+            }
+
+            updateHintButton();
+        }
+        
+        // Update the hint button state and text
+        function updateHintButton() {
+            const hintBtn = document.getElementById('hint-btn');
+            if (currentLevel >= problems.length) {
+                hintBtn.disabled = true;
+                hintBtn.textContent = 'Mission Complete';
+                return;
+            }
+
+            const remaining = maxHints - hintsShown;
+            hintBtn.textContent = `Hint (${remaining})`;
+            hintBtn.disabled = remaining === 0;
+            hintBtn.classList.toggle('opacity-50', remaining === 0);
+        }
+        
+        // Function to start the game
+        function startGame() {
+            const titleScreen = document.getElementById('title-screen');
+            const gameCard = document.getElementById('game-card');
+            
+            titleScreen.classList.add('hidden');
+            gameCard.classList.remove('hidden');
+            
+            loadLevel();
+        }
+
+        // Initialize the game
+        window.onload = function() {
+            // Re-render lucide icons initially
+            lucide.createIcons(); 
+        };
+
+        // Allow 'Enter' key to submit
+        document.getElementById('answer-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                checkAnswer();
+            }
+        });
+
+    </script>
+
+</body>
+</html>
