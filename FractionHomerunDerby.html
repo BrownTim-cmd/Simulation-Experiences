@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraction Homerun Derby</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light background for baseball theme */
+            color: #1f2937;
+        }
+        .fraction-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            user-select: none;
+        }
+        .fraction-part {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 10px;
+        }
+        .numerator, .denominator {
+            display: inline-block;
+            padding: 0 10px;
+        }
+        .separator {
+            border-top: 3px solid #3b82f6; /* Blue separator */
+            width: 50px;
+        }
+        .problem-text {
+            min-height: 100px; /* Ensure space for feedback */
+        }
+        .baseball-icon {
+            font-size: 3rem;
+        }
+        .answer-input {
+            width: 100px;
+            text-align: center;
+            font-size: 1.5rem;
+            border-radius: 0.5rem;
+            border: 2px solid #d1d5db;
+            background-color: #ffffff;
+            color: #1f2937;
+            padding: 8px;
+            margin: 4px 0;
+            transition: border-color 0.2s;
+        }
+        .answer-input:focus {
+            border-color: #f59e0b; /* Yellow/Orange focus */
+            outline: none;
+        }
+        .hit-message {
+            animation: pulse-hit 0.5s ease-in-out;
+            color: #10b981; /* Green for success */
+        }
+        @keyframes pulse-hit {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+        
+    </style>
+</head>
+<body>
+
+<div class="max-w-7xl mx-auto p-4 md:p-8 bg-white shadow-2xl rounded-xl mt-6">
+    <h1 class="text-4xl font-black text-center text-red-600 mb-2">
+        ⚾ Fraction Homerun Derby 🏏
+    </h1>
+    <p class="text-center text-gray-600 mb-6">Solve the fraction problems to hit a homerun and score runs!</p>
+
+    <!-- TITLE SCREEN -->
+    <div id="title-screen" class="text-center p-8 bg-yellow-50 rounded-lg border-4 border-blue-500">
+        <h2 class="text-3xl font-extrabold text-blue-800 mb-4">Welcome to the Homerun Derby!</h2>
+        <p id="title-instructions" class="text-lg text-gray-700 mb-8">
+            The goal of this game is to multiply the fractions you are pitched and enter the answer in its **simplest form**. Hit 15 homeruns to win the World Series! If you miss a pitch, the Coach will give you guidance.
+        </p>
+        <div class="flex justify-center space-x-4">
+            <button id="start-game-button" onclick="startGame()"
+                    class="px-8 py-3 bg-red-600 text-white font-bold rounded-full shadow-lg hover:bg-red-700 transition duration-300 transform hover:scale-105">
+                Play Ball!
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN GAME UI (Hidden by default) -->
+    <div id="game-ui" class="hidden">
+        <!-- Scoreboard and Current Problem -->
+        <div class="flex justify-around items-center mb-6 p-4 rounded-xl bg-gray-100 border-b-4 border-blue-500">
+            <div class="text-center">
+                <p class="text-sm text-gray-500">Pitch Q</p>
+                <p id="q-number" class="text-3xl font-extrabold text-gray-800">1 / 15</p>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-500">Runs Scored</p>
+                <p id="runs-scored" class="text-4xl font-black text-red-600">0</p>
+            </div>
+            <div class="text-center">
+                 <div id="kpop-icon" class="baseball-icon">
+                    <span role="img" aria-label="Baseball">🥎</span>
+                 </div>
+            </div>
+        </div>
+
+        <!-- The Problem Display -->
+        <div class="fraction-display border-2 border-gray-300 rounded-lg p-4 bg-yellow-50">
+            <div id="whole-a" class="text-2xl font-bold mr-2 text-gray-800 hidden"></div>
+            <div id="frac-a" class="fraction-part">
+                <div id="num-a" class="numerator text-gray-800">?</div>
+                <div class="separator"></div>
+                <div id="den-a" class="denominator text-gray-800">?</div>
+            </div>
+            <span class="text-4xl font-bold mx-4 text-blue-600">×</span>
+            <div id="whole-b" class="text-2xl font-bold mr-2 text-gray-800 hidden"></div>
+            <div id="frac-b" class="fraction-part">
+                <div id="num-b" class="numerator text-gray-800">?</div>
+                <div class="separator"></div>
+                <div id="den-b" class="denominator text-gray-800">?</div>
+            </div>
+            <span class="text-4xl font-bold mx-4 text-red-600">=</span>
+            <div class="fraction-part">
+                <input type="text" id="answer-numerator" placeholder="Num" class="answer-input text-gray-800">
+                <div class="separator"></div>
+                <input type="text" id="answer-denominator" placeholder="Den" class="answer-input text-gray-800">
+            </div>
+        </div>
+
+        <!-- Context/Feedback Area -->
+        <div id="game-context" class="problem-text text-center mt-4 p-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-700">
+            <p>Batter up! Solve the problem and press "Swing!"</p>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-between mt-6 space-x-2">
+            <button id="check-button" onclick="checkAnswer()"
+                    class="flex-1 px-4 py-3 bg-red-600 text-white font-bold rounded-full shadow-lg hover:bg-red-700 transition duration-300 transform hover:scale-105 disabled:bg-gray-400 text-sm md:text-base">
+                Swing! (Submit)
+            </button>
+            <button id="hint-button" onclick="showHint()"
+                    class="flex-1 px-4 py-3 bg-blue-500 text-white font-bold rounded-full shadow-lg hover:bg-blue-600 transition duration-300 transform hover:scale-105 disabled:bg-gray-400 text-sm md:text-base">
+                Hint (Level 1)
+            </button>
+        </div>
+    </div>
+    
+    <!-- Final Message Box (Hidden by default) -->
+    <div id="message-box" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm border-2 border-red-500">
+            <h3 id="message-title" class="text-3xl font-black text-red-600 mb-4"></h3>
+            <p id="message-content" class="text-gray-700 mb-6"></p>
+            <button onclick="startGame()" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition duration-300">
+                Play Again!
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Global Game State ---
+    let currentQIndex = 0;
+    let runs = 0;
+    let hintLevel = 0;
+    const TOTAL_QUESTIONS = 15; 
+    
+    // The titleScreenText variable is removed as it was only used for TTS.
+
+    // --- Problem Definitions [NumA, DenA, NumB, DenB, Context Text] ---
+    const problems = [
+        // Q1: Simple multiplication
+        { 
+            a: [1, 3], b: [2, 5], 
+            context: "Rookie pitcher throws a slow curveball. He needs $\\frac{1}{3}$ of the strike zone, and $\\frac{2}{5}$ of that area is the sweet spot. What fraction of the *entire strike zone* is the sweet spot?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q2: Simplification needed (2/24 -> 1/12)
+        { 
+            a: [1, 4], b: [2, 6], 
+            context: "The team uses $\\frac{1}{4}$ of its budget on bats. $\\frac{2}{6}$ of that bat budget goes to customized grips. What fraction of the *total budget* goes to customized grips?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q3: Simplification needed (6/32 -> 3/16)
+        { 
+            a: [3, 8], b: [2, 4], 
+            context: "The outfield grass is $\\frac{3}{8}$ covered in dew. The grounds crew dries $\\frac{2}{4}$ of that wet area. What fraction of the *whole outfield* did the crew dry?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q4: Whole number multiplication
+        { 
+            a: [4, 1], b: [1, 6], 
+            context: "The team has 4 practice hitting stations. Each station uses $\\frac{1}{6}$ of a box of practice balls. How many boxes of practice balls are used in total?",
+            wholeA: 4, wholeB: 0
+        },
+        // Q5: Improper fraction, simplification (14/20 -> 7/10)
+        { 
+            a: [7, 4], b: [2, 5], 
+            context: "The stadium has $\\frac{7}{4}$ (an improper fraction) miles of banner tape. If $\\frac{2}{5}$ of that tape is red, what length of the tape is red?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q6: Simple self-multiplication (1/4 * 3/4)
+        { 
+            a: [1, 4], b: [3, 4], 
+            context: "A successful steal depends on focus. If a runner has $\\frac{1}{4}$ of his energy left, and he uses $\\frac{3}{4}$ of that remaining energy to sprint, what fraction of his *original* energy did he use?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q7: Cross-simplification potential (10/40 -> 1/4)
+        { 
+            a: [2, 5], b: [5, 8], 
+            context: "The batter's on-base percentage is $\\frac{2}{5}$. He only swings at $\\frac{5}{8}$ of the pitches. What is the overall fractional chance that he swings *and* gets on base?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q8: Simple multiplication (1/2 * 1/2)
+        { 
+            a: [1, 2], b: [1, 2], 
+            context: "At the stadium shop, $\\frac{1}{2}$ of the people buy caps. Of those people, $\\frac{1}{2}$ buy the team's new logo. What fraction of the *total* shop customers bought the new logo cap?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q9: Simplification needed (3/15 -> 1/5)
+        { 
+            a: [3, 5], b: [1, 3], 
+            context: "The starting pitcher has $\\frac{3}{5}$ of his pitch count left. He uses $\\frac{1}{3}$ of that remaining count in the current inning. How much of his total pitch count did he use in that inning?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q10: Simplification needed (15/24 -> 5/8)
+        { 
+            a: [5, 6], b: [3, 4], 
+            context: "The team's training facility is $\\frac{5}{6}$ complete. They spent $\\frac{3}{4}$ of that construction time focusing on the indoor batting cage. What fraction of the *entire project time* was spent on the batting cage?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q11: Simplification needed (2/14 -> 1/7)
+        { 
+            a: [2, 7], b: [1, 2], 
+            context: "The new LED scoreboard is $\\frac{2}{7}$ installed. Today, the crew finished $\\frac{1}{2}$ of the remaining installation work. What fraction of the *total scoreboard* did they finish today?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q12: Whole number multiplication (2/1 * 3/4 -> 6/4 -> 3/2)
+        { 
+            a: [2, 1], b: [3, 4], 
+            context: "The coach gives 2 bags of sunflower seeds to the bullpen. If the relief pitchers eat $\\frac{3}{4}$ of one bag, what is the total fractional amount of seeds eaten?",
+            wholeA: 2, wholeB: 0
+        },
+        // Q13: Improper multiplication, simplification (5/12)
+        { 
+            a: [5, 3], b: [1, 4], 
+            context: "A special rally extended the 7th inning to $\\frac{5}{3}$ times its normal length! If $\\frac{1}{4}$ of that extra time was spent arguing with the umpire, what is the fractional time spent arguing?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q14: Simplification (24/36 -> 2/3)
+        { 
+            a: [8, 9], b: [3, 4], 
+            context: "Before the game, $\\frac{8}{9}$ of the team equipment was misplaced. The equipment manager found $\\frac{3}{4}$ of the misplaced items. What fraction of the *total equipment* was recovered?",
+            wholeA: 0, wholeB: 0
+        },
+        // Q15: Simplification (15/60 -> 1/4)
+        { 
+            a: [3, 10], b: [5, 6], 
+            context: "The stadium sales reached $\\frac{3}{10}$ of the season ticket goal. If the team needs $\\frac{5}{6}$ of that money to pay for travel, what fraction of the *total goal* is used for travel?",
+            wholeA: 0, wholeB: 0
+        }
+    ];
+
+    // --- Utility Functions ---
+
+    // Function to find the Greatest Common Divisor (GCD) using the Euclidean algorithm
+    function gcd(a, b) {
+        a = Math.abs(a);
+        b = Math.abs(b);
+        while (b) {
+            [a, b] = [b, a % b];
+        }
+        return a;
+    }
+
+    // Function to simplify a fraction [numerator, denominator]
+    function simplify(n, d) {
+        if (n === 0) return [0, 1];
+        if (d === 0) return [NaN, NaN]; 
+        
+        const common = gcd(n, d);
+        return [n / common, d / common];
+    }
+    
+    // All TTS and audio functions have been removed.
+
+
+    // --- Game Logic ---
+
+    function loadQuestion(index) {
+        if (index >= TOTAL_QUESTIONS) {
+            showEndGameMessage();
+            return;
+        }
+
+        const q = problems[index];
+        const [numA, denA] = q.a;
+        const [numB, denB] = q.b;
+
+        // Reset inputs and hint level
+        document.getElementById('answer-numerator').value = '';
+        document.getElementById('answer-denominator').value = '';
+        document.getElementById('game-context').innerHTML = `<p>${q.context}</p>`;
+        document.getElementById('hint-button').textContent = "Hint (Level 1)";
+        document.getElementById('hint-button').disabled = false;
+        // Read aloud button references removed
+        hintLevel = 0;
+
+        // Update display
+        document.getElementById('q-number').textContent = `${index + 1} / ${TOTAL_QUESTIONS}`;
+        
+        // Handle Whole Number display (Fraction A)
+        const wholeAEl = document.getElementById('whole-a');
+        const fracAEl = document.getElementById('frac-a');
+        if (q.wholeA > 0) {
+            wholeAEl.textContent = q.wholeA;
+            wholeAEl.classList.remove('hidden');
+            document.getElementById('num-a').textContent = '';
+            document.getElementById('den-a').textContent = '';
+            fracAEl.classList.add('hidden');
+            fracAEl.classList.remove('flex');
+        } else {
+            wholeAEl.classList.add('hidden');
+            fracAEl.classList.remove('hidden');
+            fracAEl.classList.add('flex');
+            document.getElementById('num-a').textContent = numA;
+            document.getElementById('den-a').textContent = denA;
+        }
+        
+        // Handle Whole Number display (Fraction B)
+        const wholeBEl = document.getElementById('whole-b');
+        const fracBEl = document.getElementById('frac-b');
+        if (q.wholeB > 0) {
+            wholeBEl.textContent = q.wholeB;
+            wholeBEl.classList.remove('hidden');
+            document.getElementById('num-b').textContent = '';
+            document.getElementById('den-b').textContent = '';
+            fracBEl.classList.add('hidden');
+            fracBEl.classList.remove('flex');
+
+        } else {
+            wholeBEl.classList.add('hidden');
+            fracBEl.classList.remove('hidden');
+            fracBEl.classList.add('flex');
+            document.getElementById('num-b').textContent = numB;
+            document.getElementById('den-b').textContent = denB;
+        }
+        
+        // Render LaTeX after loading the question content
+         if (typeof MathJax !== 'undefined') {
+            MathJax.typeset([document.getElementById('game-context')]);
+        }
+    }
+
+    function checkAnswer() {
+        const inputNum = document.getElementById('answer-numerator').value;
+        const inputDen = document.getElementById('answer-denominator').value;
+        const contextEl = document.getElementById('game-context');
+
+        const userNum = parseInt(inputNum);
+        const userDen = parseInt(inputDen);
+
+        if (isNaN(userNum) || isNaN(userDen) || userDen === 0) {
+            contextEl.innerHTML = '<p class="text-red-600 font-bold">COACH: Error! Please enter valid numbers for both the numerator and the denominator.</p>';
+            return;
+        }
+
+        const q = problems[currentQIndex];
+        let [numA, denA] = q.a;
+        let [numB, denB] = q.b;
+
+        // Adjust for whole number problems
+        if (q.wholeA > 0) {
+            numA = q.wholeA;
+            denA = 1;
+        }
+        if (q.wholeB > 0) {
+            numB = q.wholeB;
+            denB = 1;
+        }
+
+
+        // Calculate the correct answer
+        const productNum = numA * numB;
+        const productDen = denA * denB;
+        const [correctNum, correctDen] = simplify(productNum, productDen);
+        
+        // Calculate the user's simplified answer for a fair check
+        const [userSimplifiedNum, userSimplifiedDen] = simplify(userNum, userDen);
+
+        if (userSimplifiedNum === correctNum && userSimplifiedDen === correctDen) {
+            // Correct Answer!
+            // speakAnnouncement removed
+
+            runs += 1;
+            document.getElementById('runs-scored').textContent = runs;
+            // Enhanced celebratory message: bold, large text, and fireball icon
+            contextEl.innerHTML = '<p class="text-green-600 font-black text-xl hit-message">COACH: 🔥 HOME RUN! You absolutely crushed that pitch! The simplified answer $\\frac{' + correctNum + '}{' + correctDen + '}$ is correct.</p>';
+            document.getElementById('kpop-icon').innerHTML = '<span role="img" aria-label="Fireball">🔥</span>';
+            document.getElementById('check-button').disabled = true;
+            document.getElementById('hint-button').disabled = true;
+            // read aloud button disable removed
+            
+            // Delay before loading the next question - REDUCED TO 1500MS
+            setTimeout(() => {
+                currentQIndex++;
+                loadQuestion(currentQIndex);
+                document.getElementById('check-button').disabled = false;
+                document.getElementById('kpop-icon').innerHTML = '<span role="img" aria-label="Baseball">🥎</span>';
+            }, 1500);
+
+        } else {
+            // Incorrect Answer - Provide Guidance
+
+            let guidance = '';
+            
+            // Check if they multiplied correctly but didn't simplify
+            if (userNum === productNum && userDen === productDen) {
+                guidance = `STRIKE ONE! You multiplied correctly to get $\\frac{${productNum}}{${productDen}}$, but the score won\'t count until it\'s **simplified**! Find the largest number that divides into both the numerator and the denominator.`;
+            } 
+            // Check for potential addition error
+            else if (userNum === (numA + numB) && userDen === (denA + denB)) {
+                guidance = `STRIKE TWO! Oops, it looks like you tried to **add** the pitch instead of multiply. Remember, for multiplication, it's always: **Top number $\\times$ Top number** and **Bottom number $\\times$ Bottom number.** Try again.`;
+            }
+             // Check if they tried to simplify but got it wrong
+            else if (userNum * correctDen === userDen * correctNum && userDen !== productDen) {
+                guidance = `FOUL BALL! You submitted a simplified fraction, but it is not correct. Check your original multiplication, or carefully review your simplification steps. Keep trying!`;
+            }
+            // General multiplication error
+            else {
+                guidance = `STRIKE OUT! You need to check your multiplication. Remember the rule: **Multiply the numerators (top) together, and multiply the denominators (bottom) together.**`;
+            }
+
+            contextEl.innerHTML = `<p class="text-red-500 font-bold">COACH: ${guidance}</p>`;
+            document.getElementById('kpop-icon').innerHTML = '<span role="img" aria-label="Angry Face">😠</span>';
+            setTimeout(() => {
+                document.getElementById('kpop-icon').innerHTML = '<span role="img" aria-label="Baseball">🥎</span>';
+            }, 1000);
+        }
+        
+         // Re-render LaTeX for feedback text
+         if (typeof MathJax !== 'undefined') {
+            MathJax.typeset([contextEl]);
+        }
+    }
+
+    function showHint() {
+        const contextEl = document.getElementById('game-context');
+        const q = problems[currentQIndex];
+        let [numA, denA] = q.a;
+        let [numB, denB] = q.b;
+
+        // Adjust for whole number problems
+        if (q.wholeA > 0) {
+            numA = q.wholeA;
+            denA = 1;
+        }
+        if (q.wholeB > 0) {
+            numB = q.wholeB;
+            denB = 1;
+        }
+
+        const productNum = numA * numB;
+        const productDen = denA * denB;
+        
+        hintLevel++;
+        const hintButton = document.getElementById('hint-button');
+        
+        let hintText = '';
+
+        if (hintLevel === 1) {
+            hintText = `**HINT 1/3: The Simple Pitch.** Remember, multiplying fractions is easy! You just need to multiply straight across: $\\text{Numerator} \\times \\text{Numerator}$ and $\\text{Denominator} \\times \\text{Denominator}$. What new fraction does that give you?`;
+            hintButton.textContent = "Hint (Level 2)";
+        } else if (hintLevel === 2) {
+            hintText = `**HINT 2/3: The Contact Hit.** If you multiplied correctly, your new fraction is $\\frac{${productNum}}{${productDen}}$. Now, you MUST **simplify** this fraction to score! Find a common factor for the top and bottom numbers.`;
+            hintButton.textContent = "Hint (Level 3)";
+        } else if (hintLevel === 3) {
+            const [correctNum, correctDen] = simplify(productNum, productDen);
+            const commonFactor = gcd(productNum, productDen);
+            
+            if (commonFactor > 1) {
+                hintText = `**HINT 3/3: The Grand Slam.** To simplify $\\frac{${productNum}}{${productDen}}$, find the greatest common factor (GCF). The GCF is **${commonFactor}**. Divide both the top and bottom number by **${commonFactor}** to hit that final score!`;
+            } else {
+                 hintText = `**HINT 3/3: The Grand Slam.** Great news! Your fraction $\\frac{${productNum}}{${productDen}}$ is already in its simplest form! No more division needed!`;
+            }
+            hintButton.disabled = true;
+        } else {
+            hintButton.disabled = true;
+        }
+
+        contextEl.innerHTML = `<p class="text-blue-500 font-bold">COACH: ${hintText.replace(/\\frac/g, '\\\\frac')}</p>`;
+        
+         // Enable LaTeX rendering (if available in the environment)
+         if (typeof MathJax !== 'undefined') {
+            MathJax.typeset([contextEl]);
+        }
+    }
+
+    function startGame() {
+        // Transition from title screen to game UI
+        document.getElementById('title-screen').classList.add('hidden');
+        document.getElementById('game-ui').classList.remove('hidden');
+        
+        currentQIndex = 0;
+        runs = 0;
+        document.getElementById('runs-scored').textContent = runs;
+        document.getElementById('check-button').disabled = false;
+        document.getElementById('message-box').classList.add('hidden');
+        document.getElementById('kpop-icon').innerHTML = '<span role="img" aria-label="Baseball">🥎</span>';
+        loadQuestion(currentQIndex);
+    }
+
+    function showEndGameMessage() {
+        const title = runs === TOTAL_QUESTIONS ? "WORLD SERIES CHAMPIONS!" : "GAME OVER";
+        const content = runs === TOTAL_QUESTIONS 
+            ? `You achieved a perfect score of ${runs} Homeruns! Your multiplication and simplification skills are World Series ready!`
+            : `You finished the season with ${runs} out of ${TOTAL_QUESTIONS} Homeruns. Great effort! Press "Play Again!" to try for a perfect score and win the championship!`;
+        
+        document.getElementById('message-title').textContent = title;
+        document.getElementById('message-content').textContent = content;
+        document.getElementById('message-box').classList.remove('hidden');
+    }
+    
+    // Function to run on initial load
+    function initializeApp() {
+        document.getElementById('game-ui').classList.add('hidden');
+        document.getElementById('title-screen').classList.remove('hidden');
+    }
+
+    // Initialize MathJax for rendering LaTeX fractions
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+      startup: {
+        ready: () => {
+          MathJax.startup.defaultReady();
+          initializeApp();
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.async = true;
+      document.head.appendChild(script);
+    })();
+
+
+    // Fallback for immediate start if MathJax is unavailable/slow
+    if (typeof MathJax === 'undefined') {
+        window.onload = initializeApp;
+    }
+
+
+</script>
+
+</body>
+</html>

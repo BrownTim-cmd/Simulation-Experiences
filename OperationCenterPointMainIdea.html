@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operation: Center Point – Finding the Heart of the Text</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .container-card {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .container-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+        .clue-item {
+            border-left: 4px solid #3b82f6;
+        }
+        .choice-button {
+            transition: all 0.2s ease;
+            display: flex; 
+            align-items: center;
+        }
+        .choice-button:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .correct-answer {
+            background-color: #10b981;
+            color: white;
+            animation: pulse-green 0.5s 3;
+        }
+        .incorrect-answer {
+            background-color: #ef4444;
+            color: white;
+            animation: shake 0.5s;
+        }
+        @keyframes pulse-green {
+            0%, 100% { transform: scale(1.0); }
+            50% { transform: scale(1.03); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        /* The base style for speak buttons - not strictly needed anymore, but kept for minimal style stability */
+        .speak-button {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+        }
+        /* Custom scrollbar for aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #9ca3af;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e5e7eb;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex items-start justify-center">
+
+    <div id="app" class="w-full max-w-4xl bg-white rounded-xl container-card p-6 md:p-10">
+
+        <!-- Title Screen -->
+        <div id="titleScreen" class="text-center p-10">
+            <h1 class="text-5xl font-extrabold text-indigo-700 mb-4">Operation: Center Point</h1>
+            <p class="text-2xl text-gray-600 mb-8">Welcome, 7th Grade Detective! Your job is to find the Case Summary (Main Idea) that successfully covers ALL the Detail Clues (Supporting Sentences).</p>
+
+            <!-- Removed Read Introduction button -->
+            <button onclick="startGame()" class="mt-6 px-10 py-4 bg-green-600 text-white font-bold text-xl rounded-xl shadow-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-500 transition duration-150 ease-in-out block mx-auto">
+                Start Investigating (15 Cases)
+            </button>
+        </div>
+        <!-- End Title Screen -->
+
+        <!-- The Simulation Content Area (Hidden until game starts) -->
+        <div id="gameContent" class="hidden">
+
+            <!-- Header -->
+            <header class="text-center mb-8">
+                <h1 id="currentCaseTitle" class="text-4xl font-extrabold text-blue-700 mb-2">Operation: Center Point: Case 1</h1>
+                <p class="text-xl text-gray-600 border-b pb-4">Solve the Case: Find the Summary that covers *all* the Clues!</p>
+                <div id="scoreDisplay" class="mt-4 text-lg font-semibold text-gray-800">
+                    Score: <span id="currentScore" class="text-green-600">0</span> / 15
+                </div>
+            </header>
+
+            <!-- Clues Section -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    Detail Clues (Supporting Sentences)
+                </h2>
+                <div id="cluesContainer" class="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <!-- Clues will be injected here -->
+                </div>
+            </div>
+
+            <!-- Choices Section -->
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Case Summaries (Main Idea Choices)
+                </h2>
+                <div id="choicesContainer" class="space-y-4">
+                    <!-- Choices will be injected here -->
+                </div>
+            </div>
+
+            <!-- Feedback Area -->
+            <div id="feedbackBox" class="mt-8 p-4 rounded-lg text-center hidden" role="alert">
+                <!-- Feedback message will appear here -->
+            </div>
+
+            <!-- Next Button -->
+            <div class="mt-6 text-center">
+                <button id="nextButton" class="px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 disabled:opacity-50 transition duration-150 ease-in-out" disabled>
+                    Next Case
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="hidden text-center p-10 bg-white rounded-xl">
+            <h2 class="text-4xl font-extrabold text-indigo-600 mb-4">Case Closed! Great Work, Detective!</h2>
+            <p class="text-2xl text-gray-700 mb-6">You successfully identified the Main Idea for all the cases.</p>
+            <p class="text-3xl font-bold text-green-600">Final Score: <span id="finalScore"></span> / 15</p>
+            <button onclick="restartGame()" class="mt-8 px-8 py-3 bg-green-600 text-white font-bold rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-500 transition duration-15- ease-in-out">
+                Restart Simulation
+            </button>
+        </div>
+        
+    </div>
+
+    <script>
+        const cluesContainer = document.getElementById('cluesContainer');
+        const choicesContainer = document.getElementById('choicesContainer');
+        const feedbackBox = document.getElementById('feedbackBox');
+        const nextButton = document.getElementById('nextButton');
+        const gameContent = document.getElementById('gameContent');
+        const titleScreen = document.getElementById('titleScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const currentScoreDisplay = document.getElementById('currentScore');
+        const currentCaseTitle = document.getElementById('currentCaseTitle');
+        // Removed ttsManager reference
+
+        let currentPuzzleIndex = 0;
+        let score = 0;
+        // Removed audioContext and preloaded audio variables
+
+        const TOTAL_PUZZLES = 15;
+        // Removed API URL and Voice constants
+        const SUCCESS_MESSAGE = "Way to Go Super Sleuth! That Case Summary covers ALL the Clues. You found the Main Idea!";
+
+        // Removed all TTS helper functions (base64ToArrayBuffer, pcmToWav, playPreloadedAudio, speakText, preloadCorrectAnswerAudio)
+        
+        // --- GAME DATA (15 Cases) ---
+        const puzzles = [
+            {
+                topic: "Octopus Abilities",
+                details: [
+                    "Octopuses can squeeze their bodies through tiny openings and cracks in rocks, allowing them to escape danger.",
+                    "They use sophisticated camouflage, changing the color and texture of their skin to perfectly blend into their surroundings.",
+                    "If a predator gets too close, some octopuses can squirt a cloud of black ink to confuse the attacker and make a quick getaway."
+                ],
+                choices: [
+                    { text: "Octopuses are experts at hiding from large fish and sharks, which is their only defense.", correct: false },
+                    { text: "Octopuses have many physical features and clever defense mechanisms that help them survive and avoid predators.", correct: true },
+                    { text: "Octopuses change colors to find food and to blend in with their environment.", correct: false }
+                ]
+            },
+            {
+                topic: "The Importance of the Nile River",
+                details: [
+                    "The Nile River flows northward for over 4,100 miles, making it the longest river in the world.",
+                    "Ancient Egyptian civilization depended entirely on the Nile's annual flooding to enrich the surrounding farmland with fresh silt.",
+                    "The river provides drinking water, irrigation for crops, and hydroelectric power for millions of people across 11 different countries."
+                ],
+                choices: [
+                    { text: "The Nile River is the longest river in the world, which is a major geographical fact.", correct: false },
+                    { text: "The Nile River is critically important because of its massive size, its role in supporting many countries, and its vital historical impact on civilization.", correct: true },
+                    { text: "Many different types of boats use the Nile to travel through Africa every day.", correct: false }
+                ]
+            },
+            {
+                topic: "Why We Need Quality Sleep",
+                details: [
+                    "Getting enough sleep helps your body's immune system fight off illnesses and repairs muscle tissue damaged during the day.",
+                    "Sleep improves your ability to focus, concentrate, and solve complex problems the next morning.",
+                    "While you sleep, your brain works to consolidate memories, helping you remember what you learned in school and elsewhere."
+                ],
+                choices: [
+                    { text: "Quality sleep is essential because it is the time when both the body and the mind restore and prepare for the next day.", correct: true },
+                    { text: "If you don't sleep, you won't be able to fight off a cold or flu as easily.", correct: false },
+                    { text: "Your muscles grow stronger while you sleep, especially after intense physical activity.", correct: false }
+                ]
+            },
+             {
+                topic: "Plate Tectonics",
+                details: [
+                    "The Earth's crust is broken into large pieces called plates.",
+                    "These plates constantly glide slowly over the mantle below.",
+                    "When two plates crash together, mountains can form, and earthquakes and volcanic activity often occur at the boundaries where plates meet."
+                ],
+                choices: [
+                    { text: "Earthquakes are caused when the large plates that make up the Earth's surface suddenly shift.", correct: false },
+                    { text: "Plate tectonics describes how the Earth's moving crustal pieces shape the planet's surface and cause major geological events.", correct: true },
+                    { text: "All of the Earth's major features, including oceans and continents, were formed by volcanoes.", correct: false }
+                ]
+            },
+            {
+                topic: "Recycling Benefits",
+                details: [
+                    "Recycling aluminum uses 95% less energy than making it from raw ore.",
+                    "Making products from recycled materials reduces the need to mine and harvest raw resources.",
+                    "Recycling decreases the amount of trash sent to overflowing landfills."
+                ],
+                choices: [
+                    { text: "Saving energy is the only reason why people should recycle glass and plastic containers.", correct: false },
+                    { text: "Recycling is a vital practice that helps conserve natural resources, significantly saves energy, and reduces environmental waste.", correct: true },
+                    { text: "Recycling is an expensive process that uses more water than creating new products.", correct: false }
+                ]
+            },
+            {
+                topic: "Photosynthesis",
+                details: [
+                    "Plants take in carbon dioxide from the air through small holes in their leaves called stomata.",
+                    "Using sunlight, plants convert water and carbon dioxide into glucose, which is their food.",
+                    "Oxygen is released as a byproduct, which animals and humans breathe."
+                ],
+                choices: [
+                    { text: "Plants absorb carbon dioxide, which is why they are essential for keeping the air clean.", correct: false },
+                    { text: "Photosynthesis is the complex process where plants use sunlight and carbon dioxide to create their own food and release necessary oxygen into the atmosphere.", correct: true },
+                    { text: "All living things need energy and food to survive and grow strong.", correct: false }
+                ]
+            },
+            {
+                topic: "Renaissance Artists",
+                details: [
+                    "Leonardo da Vinci was a painter, inventor, and thinker who created the Mona Lisa.",
+                    "Michelangelo was a sculptor and painter famous for the ceiling of the Sistine Chapel.",
+                    "Raphael was known for his mastery of perspective and his peaceful, harmonious paintings."
+                ],
+                choices: [
+                    { text: "The most famous Renaissance artist was Leonardo da Vinci, who specialized in portraits.", correct: false },
+                    { text: "The Renaissance was a period defined by extraordinary artists like Da Vinci, Michelangelo, and Raphael, who created works that changed the course of Western art.", correct: true },
+                    { text: "During the Renaissance, new forms of government began to replace the old monarchies in Italy.", correct: false }
+                ]
+            },
+            {
+                topic: "Invasive Species",
+                details: [
+                    "Invasive species, like the Burmese python in Florida, often have no natural predators in their new environment.",
+                    "They can quickly outcompete native plants or animals for essential resources like food and space.",
+                    "Their presence can severely damage local ecosystems and even cause native species to become endangered."
+                ],
+                choices: [
+                    { text: "Many invasive species are dangerous snakes, like the python, which must be relocated from nature preserves.", correct: false },
+                    { text: "Invasive species are dangerous newcomers that disrupt local ecosystems by out-competing native life and causing environmental harm.", correct: true },
+                    { text: "Invasive species help local wildlife by introducing new sources of food to the ecosystem.", correct: false }
+                ]
+            },
+            {
+                topic: "Human Skeleton",
+                details: [
+                    "The skeleton acts like a frame, giving the body shape and providing attachment points for muscles.",
+                    "Bones protect delicate organs; for example, the ribs shield the lungs and heart.",
+                    "Inside the bones, yellow marrow stores fat, and red marrow produces new blood cells."
+                ],
+                choices: [
+                    { text: "The main job of your bones is to protect your internal organs from damage.", correct: false },
+                    { text: "The human skeleton is a crucial system that provides structural support, protection for organs, and is responsible for producing vital components of blood.", correct: true },
+                    { text: "Every living thing needs a body system that helps it move and grow.", correct: false }
+                ]
+            },
+            {
+                topic: "Social Media",
+                details: [
+                    "Social media platforms allow users to quickly share news, opinions, and updates with friends and family worldwide.",
+                    "They create online communities where people with similar interests can meet and communicate.",
+                    "Many businesses use social media to advertise products and interact directly with customers."
+                ],
+                choices: [
+                    { text: "The primary function of social media is for teenagers to talk to their friends about school.", correct: false },
+                    { text: "Social media has fundamentally changed modern communication by enabling global connections, creating specialized communities, and serving as a new platform for commerce and business.", correct: true },
+                    { text: "Social media is the oldest form of communication in the world.", correct: false }
+                ]
+            },
+            {
+                topic: "Greek Mythology",
+                details: [
+                    "Greek gods and goddesses, like Zeus and Athena, were often shown with very human emotions like jealousy, anger, or love.",
+                    "These myths were used to explain natural events, such as why there is thunder or how the seasons change.",
+                    "The stories often taught moral lessons about right and wrong behavior to the ancient people."
+                ],
+                choices: [
+                    { text: "Greek myths are important because they are the only source of information about ancient Greek weather.", correct: false },
+                    { text: "Greek myths were complex narratives featuring human-like gods that served to explain natural phenomena and teach moral lessons to society.", correct: true },
+                    { text: "Storytelling is an important part of every human culture in the world.", correct: false }
+                ]
+            },
+            {
+                topic: "Mars Exploration",
+                details: [
+                    "Rovers like Perseverance and Curiosity are currently searching Mars for signs of past microbial life in ancient lake beds.",
+                    "Scientists are analyzing samples of Martian soil and rock, looking for water content and organic compounds.",
+                    "The primary long-term goal is to determine if Mars is capable of supporting future human colonization."
+                ],
+                choices: [
+                    { text: "Rovers are currently taking pictures of the Martian surface to send back to NASA scientists.", correct: false },
+                    { text: "Current missions to Mars are focused on finding evidence of past life, analyzing the planet's composition, and assessing its potential for eventual human settlement.", correct: true },
+                    { text: "Mars is the only planet in the solar system that has water on its surface right now.", correct: false }
+                ]
+            },
+            {
+                topic: "Composting",
+                details: [
+                    "Compost is created by collecting organic waste, such as food scraps and yard trimmings, and allowing it to decompose naturally.",
+                    "Finished compost can be mixed into garden soil to improve its texture and help it retain water more effectively.",
+                    "Composting provides essential nutrients and microbes that act as a natural fertilizer, reducing the need for chemical products."
+                ],
+                choices: [
+                    { text: "The biggest benefit of composting is that it allows the soil to hold onto water better.", correct: false },
+                    { text: "Composting is an environmentally friendly way to recycle organic waste into a nutrient-rich material that greatly benefits soil quality and plant health.", correct: true },
+                    { text: "Many people have started recycling plastic and paper products in their homes.", correct: false }
+                ]
+            },
+            {
+                topic: "Electric Cars",
+                details: [
+                    "Electric cars produce zero tailpipe emissions, leading to cleaner air in cities compared to gasoline vehicles.",
+                    "They require far less maintenance because they have fewer moving parts than traditional internal combustion engines.",
+                    "Electric motors provide instant torque, which gives these cars very fast acceleration."
+                ],
+                choices: [
+                    { text: "Electric cars are only popular because they can accelerate very quickly from a stop.", correct: false },
+                    { text: "Electric vehicles offer multiple advantages over gasoline cars, including environmental benefits, reduced maintenance needs, and high-performance acceleration.", correct: true },
+                    { text: "Transportation has changed dramatically since the invention of the car.", correct: false }
+                ]
+            },
+            {
+                topic: "Coral Reefs",
+                details: [
+                    "Coral reefs are sometimes called the 'rainforests of the sea' because they support nearly 25% of all marine life.",
+                    "The reefs protect coastlines by absorbing the energy of waves and reducing erosion during storms.",
+                    "Many medicines and important chemical compounds have been discovered in the diverse organisms that live on the reefs."
+                ],
+                choices: [
+                    { text: "Coral reefs are necessary because they protect the land from being eroded by strong waves.", correct: false },
+                    { text: "Coral reefs are indispensable underwater ecosystems that provide shelter for vast amounts of marine life, protect coastal land, and are a source of potentially life-saving resources.", correct: true },
+                    { text: "Coral reefs are mostly made up of large plants that float on the surface of the ocean.", correct: false }
+                ]
+            }
+        ];
+        // --- END GAME DATA ---
+        
+        // Removed call to preloadCorrectAnswerAudio();
+
+
+        function startGame() {
+            titleScreen.classList.add('hidden');
+            gameContent.classList.remove('hidden');
+            loadPuzzle();
+        }
+
+        function loadPuzzle() {
+            if (currentPuzzleIndex >= TOTAL_PUZZLES) {
+                showGameOver();
+                return;
+            }
+
+            const puzzle = puzzles[currentPuzzleIndex];
+            cluesContainer.innerHTML = '';
+            choicesContainer.innerHTML = '';
+            feedbackBox.classList.add('hidden');
+            feedbackBox.textContent = '';
+            nextButton.disabled = true;
+
+            // Update score display and title
+            currentCaseTitle.textContent = `Operation: Center Point: Case ${currentPuzzleIndex + 1}`;
+
+            // 1. Load Details (Clues)
+            puzzle.details.forEach(detail => {
+                const div = document.createElement('div');
+                // Removed speak-button related classes and logic
+                div.className = 'clue-item p-3 pl-4 bg-white rounded-md text-gray-700 text-base border-l-4 border-blue-500 shadow-sm flex items-start';
+
+                const clueTextSpan = document.createElement('span');
+                clueTextSpan.className = 'flex-1 pt-1';
+                clueTextSpan.innerHTML = `<span class="font-bold text-blue-600 mr-2">CLUE:</span> ${detail}`;
+
+                div.appendChild(clueTextSpan);
+                cluesContainer.appendChild(div);
+            });
+
+            // 2. Load Choices (Main Ideas) - shuffle choices for variety
+            const shuffledChoices = puzzle.choices.sort(() => Math.random() - 0.5);
+
+            shuffledChoices.forEach((choice, index) => {
+                const button = document.createElement('button');
+                // Removed speak-button related classes and flex
+                button.className = 'choice-button w-full text-left p-4 rounded-lg bg-gray-100 text-gray-800 font-semibold border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-blue-300';
+                button.dataset.correct = choice.correct;
+                button.onclick = () => handleChoice(button);
+
+                // Removed Read Aloud Button for Choice
+                
+                button.append(choice.text); // Use append to add text node
+                choicesContainer.appendChild(button);
+            });
+        }
+
+        function handleChoice(selectedButton) {
+            // Disable all buttons after a choice is made
+            Array.from(choicesContainer.children).forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-gray-200');
+            });
+
+            const isCorrect = selectedButton.dataset.correct === 'true';
+            const successMessage = "Way to Go Super Sleuth! That Case Summary covers ALL the Clues. You found the Main Idea!";
+
+            if (isCorrect) {
+                // Correct Answer Logic
+                score++;
+                currentScoreDisplay.textContent = score;
+                selectedButton.classList.add('correct-answer');
+                feedbackBox.className = 'mt-8 p-4 rounded-lg text-center bg-green-100 border border-green-400 text-green-700 font-bold';
+                
+                // Set text (Removed instant audio playback)
+                feedbackBox.textContent = successMessage;
+                
+                nextButton.disabled = false;
+
+            } else {
+                // Incorrect Answer Logic
+                selectedButton.classList.add('incorrect-answer');
+                feedbackBox.className = 'mt-8 p-4 rounded-lg text-center bg-red-100 border border-red-400 text-red-700 font-bold';
+                feedbackBox.textContent = "Not quite! That summary was too narrow or incorrect. Try again next round!";
+                nextButton.disabled = false;
+
+                // Highlight the correct answer
+                const correctButton = Array.from(choicesContainer.children).find(btn => btn.dataset.correct === 'true');
+                if (correctButton) {
+                    correctButton.classList.add('bg-green-300', 'text-gray-800');
+                }
+            }
+
+            feedbackBox.classList.remove('hidden');
+        }
+
+        function nextPuzzle() {
+            currentPuzzleIndex++;
+            loadPuzzle();
+        }
+
+        function showGameOver() {
+            gameContent.classList.add('hidden');
+            gameOverScreen.classList.remove('hidden');
+            finalScoreDisplay.textContent = `${score}`;
+        }
+
+        function restartGame() {
+            currentPuzzleIndex = 0;
+            score = 0;
+            currentScoreDisplay.textContent = score;
+            gameOverScreen.classList.add('hidden');
+            titleScreen.classList.remove('hidden'); // Go back to title screen
+            gameContent.classList.add('hidden');
+        }
+
+        // Event Listeners
+        nextButton.addEventListener('click', nextPuzzle);
+
+    </script>
+</body>
+</html>

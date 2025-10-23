@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Addams Family Multiplication Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #581d43; /* Deep Purple / Crimson */
+            --secondary: #a9a9a9; /* Dark Gray */
+            --background: #1a1a1a; /* Nearly Black */
+            --text-light: #f0f0f0; /* Off-White */
+            --accent: #2c2c2c; /* Mid Gray */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            
+            /* SPOOKY HOUSE BACKGROUND: Simple SVG silhouette embedded via Data URI */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='20' y='45' width='60' height='45' fill='%23383838'/%3E%3Cpolygon points='15 45, 85 45, 50 15' fill='%23383838'/%3E%3Crect x='45' y='65' width='10' height='25' fill='%23282828'/%3E%3Crect x='30' y='60' width='10' height='10' fill='%23484848'/%3E%3Crect x='60' y='60' width='10' height='10' fill='%23484848'/%3E%3C/svg%3E");
+            background-size: 80vmax; /* Large size to fill screen area */
+            background-position: center top;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+        .full-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+        .magic-card {
+            /* Changed background slightly darker for better contrast with the background image */
+            background: #333333;
+            border: 4px solid var(--primary);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            max-width: 500px;
+            width: 100%;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--text-light);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            background-color: #802f5a;
+            transform: translateY(-1px);
+        }
+        .btn-hint {
+            background-color: #3b82f6; /* Blue for logic/guidance */
+            color: white;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-hint:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+        .title-font {
+            font-family: 'Cinzel', serif;
+            color: var(--text-light);
+            text-shadow: 1px 1px 2px var(--primary);
+        }
+        .snap-animation {
+            animation: pulse-border 1.5s infinite;
+        }
+        @keyframes pulse-border {
+            0% { border-color: var(--primary); }
+            50% { border-color: var(--secondary); }
+            100% { border-color: var(--primary); }
+        }
+        /* Hidden class to manage initial state */
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    
+    <!-- Intro Modal (Visible on load) -->
+    <div id="intro-modal" class="full-modal">
+        <div class="magic-card p-10 text-center rounded-xl">
+            <h1 class="title-font text-5xl font-bold mb-4">The Addams Family</h1>
+            <h2 class="text-2xl mb-6">Multiplication Challenge</h2>
+            <p id="intro-text" class="text-gray-300 mb-8">Click below to start your delightfully morbid math lesson!</p>
+            
+            <button id="start-button" onclick="initGame()" class="btn-primary p-4 rounded-lg font-bold text-xl shadow-xl hover:shadow-2xl">
+                Start Lesson
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Game Container (Hidden initially) -->
+    <div id="game-container" class="magic-card rounded-xl p-6 md:p-10 hidden">
+        <!-- Header -->
+        <header class="text-center mb-6">
+            <h1 class="title-font text-3xl md:text-4xl font-bold mb-2">Addams Family Multiplication</h1>
+            <p class="text-lg">A Delightfully Morbid Math Lesson</p>
+            <div class="mt-3 text-xl font-bold text-white">
+                Score: <span id="score-display" class="text-green-400">0</span> / <span id="total-questions-display">0</span>
+            </div>
+        </header>
+
+        <!-- Question Area -->
+        <main id="question-area" class="text-center p-4 rounded-lg bg-gray-800 border border-gray-600">
+            <p id="question-text" class="text-xl md:text-2xl font-semibold mb-6 text-gray-200"></p>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
+                <input type="number" id="answer-input" placeholder="Enter your answer" class="p-3 w-full sm:w-1/2 rounded-lg border-2 border-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-center text-xl font-mono text-gray-900 bg-gray-100">
+                <button id="submit-button" class="btn-primary w-full sm:w-1/4 p-3 rounded-lg font-bold shadow-lg hover:shadow-xl">
+                    Summon Answer!
+                </button>
+            </div>
+            
+            <!-- Hint System -->
+            <button id="hint-button" class="btn-hint w-full p-2 rounded-lg font-semibold mb-4 opacity-50 cursor-not-allowed" disabled>
+                🧠 Reveal Hint
+            </button>
+
+            <div id="hint-box" class="min-h-[60px] p-3 rounded-lg border-2 border-dashed border-gray-500 bg-gray-700 hidden text-sm text-left text-gray-200">
+                <!-- Hints will appear here -->
+            </div>
+
+            <p id="feedback-message" class="mt-4 font-bold text-lg min-h-[1.5rem]"></p>
+        </main>
+
+        <!-- Final Score Modal -->
+        <div id="final-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
+            <div class="magic-card p-8 text-center rounded-xl snap-animation">
+                <h2 id="final-title" class="title-font text-3xl font-bold text-green-400 mb-4"></h2>
+                <p id="final-message" class="text-xl mb-6 text-gray-200"></p>
+                <button onclick="initGame()" class="btn-primary p-3 rounded-lg font-bold shadow-lg">Start New Lesson</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // Global Constants and State
+        const QUIZ_LENGTH = 20; 
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let hintLevel = 0;
+        let currentQuestion = null;
+        
+        // Removed audioContext and themePlaying globals
+
+        // --- GAME DATA ---
+
+        // Define questions and generate hints in one step
+        const questions = [
+            // Level 1: Basics (0, 1, 2, 5, 10)
+            { a: 5, b: 2, ans: 10, prompt: "Pugsley needs 5 **exploding tennis balls**, but Wednesday said he should use double that." },
+            { a: 1, b: 9, ans: 9, prompt: "Fester hides **candlesticks** in 9 different shadows, 1 per shadow. How many candlesticks did he hide?" },
+            { a: 10, b: 3, ans: 30, prompt: "Morticia cuts 3 vines, each holding 10 **poisonous blossoms**. How many blossoms does she have?" },
+            { a: 0, b: 7, ans: 0, prompt: "Gomez searches 7 drawers for his hidden **gold coins**, but they are all empty. How many coins did he find?" },
+            { a: 2, b: 4, ans: 8, prompt: "Lurch winds 4 antique clocks, each striking **two times** an hour. How many strikes in one hour?" },
+
+            // Level 2: Intermediate (3, 4)
+            { a: 3, b: 5, ans: 15, prompt: "Wednesday has 5 **pet spiders**, each weaving 3 webs. How many total webs are there?" },
+            { a: 4, b: 3, ans: 12, prompt: "Cousin Itt needs 4 hair curlers for 3 **rows** of hair. How many curlers in total?" },
+            { a: 3, b: 8, ans: 24, prompt: "Grandmama needs 8 jars, each holding 3 **newt eyes** for a spooky brew. How many eyes total?" },
+            { a: 4, b: 6, ans: 24, prompt: "Gomez sends 6 notes, each sealed with 4 **drops of wax**. How many drops were used?" },
+
+            // Level 3: Advanced (6, 7, 8, 9)
+            { a: 6, b: 7, ans: 42, prompt: "Thing sorts 7 crates of **knives**, with 6 knives in each. How many knives did Thing sort?" },
+            { a: 8, b: 5, ans: 40, prompt: "The crypt door is locked with 5 chains, each having 8 **rusty links**. How many links in total?" },
+            { a: 9, b: 4, ans: 36, prompt: "Morticia arranges 9 vases, each holding 4 **dead roses**. How many dead roses are there?" },
+            { a: 6, b: 8, ans: 48, prompt: "Wednesday practices 8 torture techniques, each requiring 6 **minutes** of focus. How many minutes total?" },
+            { a: 7, b: 7, ans: 49, prompt: "Gomez bought 7 crates of **dynamite**, each with 7 sticks. How many sticks of dynamite?" },
+            
+            // Level 3: Advanced (6, 7, 8, 9) - NEW QUESTIONS
+            { a: 7, b: 8, ans: 56, prompt: "Thing performs 8 different **finger-snapping routines**, each 7 seconds long. Total seconds?" },
+            { a: 9, b: 6, ans: 54, prompt: "Lurch mops 6 **giant rooms**, and each room requires 9 buckets of water. How many buckets total?" },
+            { a: 8, b: 9, ans: 72, prompt: "Gomez owns 9 **fencing swords**, and each sword cost 8 rare coins. Total cost?" },
+            { a: 7, b: 4, ans: 28, prompt: "Morticia plants 4 **man-eating plants**, and each one grew 7 tiny fangs. How many fangs in total?" },
+            { a: 8, b: 8, ans: 64, prompt: "Grandmama needs 8 **deadly nightshade berries** for each of 8 potions. How many berries in total?" },
+        ].map(q => { // Generate the hints based on the numbers right after definition
+            q.hints = [
+                // Hint 1: Repeated Addition
+                `Hint 1 (Basic): Remember, multiplication is just repeated addition. For ${q.a} x ${q.b}, you are adding ${q.a} to itself ${q.b} times.`,
+
+                // Hint 2: Grouping/Visualization
+                `Hint 2 (Visualize): Imagine ${q.b} groups, and there are ${q.a} items in each group. Count them all up!`,
+
+                // Hint 3: Near a known fact (if applicable) or a simple counting method
+                (q.b === 9 && q.a < 10) ?
+                    `Hint 3 (Nines Trick): To find ${q.a} x 9, you can think of ${q.a} x 10 (which is ${q.a * 10}) and then subtract ${q.a}.` :
+                    `Hint 3 (Counting Up): You can count up by ${q.a}, ${q.b} times: ${q.a}, ${q.a * 2}, ${q.a * 3}, ...`
+            ];
+            return q;
+        });
+
+        // DOM Elements
+        const introModalEl = document.getElementById('intro-modal');
+        const questionTextEl = document.getElementById('question-text');
+        const answerInputEl = document.getElementById('answer-input');
+        const submitButtonEl = document.getElementById('submit-button');
+        const hintButtonEl = document.getElementById('hint-button');
+        const hintBoxEl = document.getElementById('hint-box');
+        const feedbackMessageEl = document.getElementById('feedback-message');
+        const scoreDisplayEl = document.getElementById('score-display');
+        const totalQuestionsDisplayEl = document.getElementById('total-questions-display');
+        const finalModalEl = document.getElementById('final-modal');
+        const gameContainerEl = document.getElementById('game-container');
+        const finalTitleEl = document.getElementById('final-title');
+        const finalMessageEl = document.getElementById('final-message');
+
+        // Removed all AudioContext and SpeechSynthesis functions
+        
+        // --- GAME FLOW LOGIC ---
+        
+        /**
+         * Handles initialization: hides intro, starts the quiz.
+         */
+        function initGame() {
+            introModalEl.classList.add('hidden');
+            gameContainerEl.classList.remove('hidden');
+            finalModalEl.classList.add('hidden');
+            
+            // Removed call to playSpookyIntroMusic(); 
+            startQuiz();
+            answerInputEl.focus();
+        }
+
+        /**
+         * Initializes or restarts the quiz state.
+         */
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            totalQuestionsDisplayEl.textContent = QUIZ_LENGTH;
+            gameContainerEl.classList.remove('snap-animation');
+            updateScoreDisplay();
+            loadQuestion(questions[currentQuestionIndex]);
+            answerInputEl.focus();
+        }
+
+        /**
+         * Updates the score on the screen.
+         */
+        function updateScoreDisplay() {
+            scoreDisplayEl.textContent = score;
+        }
+        
+        // Removed readQuestion()
+        
+        /**
+         * Loads the next question and resets UI elements.
+         * @param {Object} q The question object.
+         */
+        function loadQuestion(q) {
+            if (!q) {
+                showFinalScore();
+                return;
+            }
+
+            currentQuestion = q;
+            hintLevel = 0;
+            answerInputEl.value = '';
+            feedbackMessageEl.textContent = '';
+            hintBoxEl.classList.add('hidden');
+            hintBoxEl.innerHTML = '';
+            
+            // Removed window.speechSynthesis.cancel() call
+
+            // Update question text, highlighting the numbers/items
+            const text = q.prompt.replace(/\*\*([^*]+)\*\*/g, '<span class="text-pink-400 font-extrabold italic">$1</span>');
+            questionTextEl.innerHTML = text;
+
+            // Reset hint button state
+            hintButtonEl.classList.remove('opacity-100', 'cursor-pointer');
+            hintButtonEl.classList.add('opacity-50', 'cursor-not-allowed');
+            hintButtonEl.textContent = '🧠 Reveal Hint';
+            hintButtonEl.disabled = false;
+        }
+
+        /**
+         * Handles the user submitting an answer.
+         */
+        function checkAnswer() {
+            const userAnswer = parseInt(answerInputEl.value.trim(), 10);
+
+            if (isNaN(userAnswer)) {
+                showMessage("⚰️ That answer is six feet under. Please enter a valid number.", 'text-orange-400');
+                return;
+            }
+
+            if (userAnswer === currentQuestion.ans) {
+                handleCorrectAnswer();
+            } else {
+                handleIncorrectAnswer();
+            }
+        }
+
+        /**
+         * Actions for a correct answer.
+         */
+        function handleCorrectAnswer() {
+            // Removed playCorrectSound() call
+            showMessage("✨ Excellent! The spell works, or rather, the torture device is fully assembled!", 'text-green-400');
+            score++;
+            updateScoreDisplay();
+
+            // Move to the next question after a short delay
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < QUIZ_LENGTH) {
+                    loadQuestion(questions[currentQuestionIndex]);
+                } else {
+                    showFinalScore();
+                }
+            }, 1000); // 1 second delay
+        }
+
+        /**
+         * Actions for an incorrect answer.
+         */
+        function handleIncorrectAnswer() {
+            showMessage("💀 Incorrect. Perhaps Lurch's organ music is distracting you. Try again!", 'text-red-400');
+            hintButtonEl.classList.add('opacity-100', 'cursor-pointer');
+            hintButtonEl.classList.remove('opacity-50', 'cursor-not-allowed');
+            answerInputEl.focus();
+        }
+
+        /**
+         * Displays the next progressive hint.
+         */
+        function showHint() {
+            if (!currentQuestion) return;
+
+            hintBoxEl.classList.remove('hidden');
+            const hints = currentQuestion.hints;
+
+            if (hintLevel < hints.length) {
+                // Add the new hint
+                const newHint = document.createElement('p');
+                newHint.classList.add('mb-2', 'p-2', 'rounded-md', 'bg-gray-800', 'border-l-4', 'border-blue-500', 'animate-fade-in');
+                newHint.innerHTML = hints[hintLevel];
+                hintBoxEl.appendChild(newHint);
+
+                hintLevel++;
+                showMessage(`🕯️ A flicker of insight! ${hints.length - hintLevel} more clues lurk in the dark.`, 'text-blue-400');
+
+                // Update button text
+                if (hintLevel < hints.length) {
+                     hintButtonEl.textContent = `🧠 Reveal Next Hint (${hintLevel + 1}/${hints.length})`;
+                } else {
+                    hintButtonEl.textContent = 'No more hints available!';
+                    hintButtonEl.disabled = true;
+                    hintButtonEl.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
+
+        /**
+         * Displays a temporary message to the user.
+         * @param {string} message The message content.
+         * @param {string} colorClass The Tailwind class for text color.
+         */
+        function showMessage(message, colorClass) {
+            feedbackMessageEl.textContent = message;
+            feedbackMessageEl.className = `mt-4 font-bold text-lg min-h-[1.5rem] ${colorClass}`;
+        }
+
+        /**
+         * Shows the final results modal.
+         */
+        function showFinalScore() {
+            const percentage = (score / QUIZ_LENGTH) * 100;
+            gameContainerEl.classList.add('snap-animation');
+            finalModalEl.classList.remove('hidden');
+
+            // Removed window.speechSynthesis.cancel() call
+
+            if (percentage >= 80) {
+                finalTitleEl.textContent = "🏆 Master of Misery!";
+                finalTitleEl.classList.remove('text-orange-400', 'text-red-400');
+                finalTitleEl.classList.add('text-green-400');
+                finalMessageEl.textContent = `Your final score is ${score} out of ${QUIZ_LENGTH}. Your darkness is complete! Gomez is proud!`;
+            } else if (percentage >= 50) {
+                finalTitleEl.textContent = "👍 Acceptably Gloomy!";
+                finalTitleEl.classList.remove('text-green-400', 'text-red-400');
+                finalTitleEl.classList.add('text-orange-400');
+                finalMessageEl.textContent = `Your final score is ${score} out of ${QUIZ_LENGTH}. Keep practicing your morbid math, you're close to perfect despair!`;
+            } else {
+                finalTitleEl.textContent = "🤔 Needs More Torture...";
+                finalTitleEl.classList.remove('text-green-400', 'text-orange-400');
+                finalTitleEl.classList.add('text-red-400');
+                finalMessageEl.textContent = `Your final score is ${score} out of ${QUIZ_LENGTH}. The lesson continues! A little extra study will increase your gloom factor.`;
+            }
+        }
+
+        // Event Listeners
+        submitButtonEl.addEventListener('click', checkAnswer);
+        hintButtonEl.addEventListener('click', showHint);
+        
+        // Removed event listener for readAloudButtonEl
+        // Removed event listener for introReadAloudButtonEl
+
+        answerInputEl.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        // The game should start by showing the intro modal only.
+        document.addEventListener('DOMContentLoaded', () => {
+            // No action needed here, as the default state shows the intro-modal and hides game-container
+        });
+    </script>
+</body>
+</html>

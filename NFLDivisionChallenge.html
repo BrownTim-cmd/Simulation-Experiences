@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL Division Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            /* KC Chiefs Red/Gold theme with Stadium Background */
+            background-image: url('https://placehold.co/1920x1080/000000/FFFFFF/png?text=Football+Stadium');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.95); /* Slightly less transparent */
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.3);
+            padding: 2.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            z-index: 20;
+            border: 4px solid #FFB81C; /* Chiefs Gold Border */
+        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 1.5rem 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-align: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -60%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+        .football-border {
+            font-size: 2rem;
+            color: #FFB81C; /* Chiefs Gold */
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px #E31837; /* Chiefs Red Shadow */
+        }
+    </style>
+</head>
+<body>
+
+<div class="fixed top-0 left-0 w-full flex justify-around p-2 football-border">
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+</div>
+<div class="fixed bottom-0 left-0 w-full flex justify-around p-2 football-border">
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+</div>
+<div class="fixed top-0 left-0 h-full flex flex-col justify-around p-2 football-border">
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+</div>
+<div class="fixed top-0 right-0 h-full flex flex-col justify-around p-2 football-border">
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+    <span role="img" aria-label="football">🏈</span>
+</div>
+
+<div class="container relative">
+    <h1 class="text-4xl sm:text-5xl font-extrabold text-red-700 border-b-2 border-red-700 pb-2">NFL Division Challenge</h1>
+    <p class="text-gray-700 text-lg">Huddle up! Solve the division problems to score touchdowns.</p>
+
+    <div class="mt-4 p-6 bg-yellow-50 rounded-xl shadow-lg border border-red-200">
+        <p id="scoreText" class="text-2xl font-bold text-red-700">Score: 0</p>
+        <p id="questionText" class="text-3xl font-bold text-gray-800 my-6"></p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <input type="number" id="answerInput" placeholder="Enter your answer" class="flex-1 p-3 text-lg border-2 border-red-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-red-400 focus:border-red-600 transition duration-200 shadow-inner">
+            <button id="submitBtn" class="bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-xl hover:bg-red-800 transform hover:scale-105 transition duration-300">Submit</button>
+            <button id="hintBtn" class="bg-yellow-500 text-gray-900 font-bold py-3 px-6 rounded-lg shadow-xl hover:bg-yellow-600 transform hover:scale-105 transition duration-300">Hint</button>
+            <!-- Removed Play Question Button -->
+        </div>
+        <p id="hintText" class="text-gray-600 text-sm mt-4 min-h-6"></p>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="messageBox" class="message-box hidden">
+        <span id="messageBoxText" class="text-xl"></span>
+        <button id="messageBoxBtn" class="mt-4 bg-yellow-400 text-gray-900 font-semibold py-2 px-4 rounded-full hover:bg-yellow-500 transition-colors shadow-lg">OK</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const scoreText = document.getElementById('scoreText');
+        const questionText = document.getElementById('questionText');
+        const answerInput = document.getElementById('answerInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const hintBtn = document.getElementById('hintBtn');
+        const hintText = document.getElementById('hintText');
+        const gameCanvas = document.getElementById('gameCanvas');
+        const ctx = gameCanvas.getContext('2d');
+        const messageBox = document.getElementById('messageBox');
+        const messageBoxText = document.getElementById('messageBoxText');
+        const messageBoxBtn = document.getElementById('messageBoxBtn');
+
+        let gameState = {
+            score: 0,
+            difficulty: 1,
+            questionsSolved: 0,
+            hintsGiven: 0,
+            currentProblem: null,
+            // Removed questionAudioPlayed state
+        };
+
+        // Roster data is preserved to ensure correct player/position matching
+        const nflTeams = {
+            "Cardinals": { players: { QB: "Kyler Murray", RB: "James Conner" } },
+            "Falcons": { players: { QB: "Kirk Cousins", RB: "Bijan Robinson" } },
+            "Ravens": { players: { QB: "Lamar Jackson", RB: "Derrick Henry" } },
+            "Bills": { players: { QB: "Josh Allen", RB: "James Cook" } },
+            "Panthers": { players: { QB: "Bryce Young", RB: "Chuba Hubbard" } },
+            "Bears": { players: { QB: "Caleb Williams", RB: "D'Andre Swift" } },
+            "Bengals": { players: { QB: "Joe Burrow", RB: "Zack Moss" } },
+            "Browns": { players: { QB: "Deshaun Watson", RB: "Nick Chubb" } },
+            "Cowboys": { players: { QB: "Dak Prescott", RB: "Rico Dowdle" } },
+            "Broncos": { players: { QB: "Bo Nix", RB: "Javonte Williams" } },
+            "Lions": { players: { QB: "Jared Goff", RB: "Jahmyr Gibbs" } },
+            "Packers": { players: { QB: "Jordan Love", RB: "Josh Jacobs" } },
+            "Texans": { players: { QB: "C.J. Stroud", RB: "Joe Mixon" } },
+            "Colts": { players: { QB: "Anthony Richardson", RB: "Jonathan Taylor" } },
+            "Jaguars": { players: { QB: "Trevor Lawrence", RB: "Travis Etienne Jr." } },
+            "Chiefs": { players: { QB: "Patrick Mahomes", RB: "Isiah Pacheco" } },
+            "Raiders": { players: { QB: "Aidan O'Connell", RB: "Zamir White" } },
+            "Chargers": { players: { QB: "Justin Herbert", RB: "Gus Edwards" } },
+            "Rams": { players: { QB: "Matthew Stafford", RB: "Kyren Williams" } },
+            "Dolphins": { players: { QB: "Tua Tagovailoa", RB: "Raheem Mostert" } },
+            "Vikings": { players: { QB: "Sam Darnold", RB: "Aaron Jones" } },
+            "Patriots": { players: { QB: "Drake Maye", RB: "Rhamondre Stevenson" } },
+            "Saints": { players: { QB: "Derek Carr", RB: "Alvin Kamara" } },
+            "Giants": { players: { QB: "Daniel Jones", RB: "Devin Singletary" } },
+            "Jets": { players: { QB: "Aaron Rodgers", RB: "Breece Hall" } },
+            "Eagles": { players: { QB: "Jalen Hurts", RB: "Saquon Barkley" } },
+            "Steelers": { players: { QB: "Russell Wilson", RB: "Najee Harris" } },
+            "49ers": { players: { QB: "Brock Purdy", RB: "Christian McCaffrey" } },
+            "Seahawks": { players: { QB: "Geno Smith", RB: "Kenneth Walker III" } },
+            "Buccaneers": { players: { QB: "Baker Mayfield", RB: "Rachaad White" } },
+            "Titans": { players: { QB: "Will Levis", RB: "Tony Pollard" } },
+            "Commanders": { players: { QB: "Jayden Daniels", RB: "Brian Robinson Jr." } }
+        };
+        
+        // Team voices array remains, but is only used for the correct answer celebration.
+        const teamVoices = {
+            "Bills": "Kore",
+            "Chiefs": "Fenrir",
+            "Cowboys": "Zubenelgenubi",
+            "Dolphins": "Laomedeia",
+            "Patriots": "Rasalgethi",
+            "Eagles": "Orus",
+            "49ers": "Gacrux",
+            "Packers": "Iapetus",
+            "Seahawks": "Leda",
+            "Lions": "Puck",
+            "Vikings": "Umbriel",
+            "Broncos": "Achird",
+            "Raiders": "Algenib",
+            "Steelers": "Achernar",
+            "Ravens": "Alnilam"
+        };
+
+        const difficultyLevels = {
+            1: {
+                maxDivisor: 12,
+                maxDividend: 100
+            },
+            2: {
+                maxDivisor: 25,
+                maxDividend: 500
+            },
+            3: {
+                maxDivisor: 50,
+                maxDividend: 1000
+            }
+        };
+
+        const templates = {
+            1: [
+                { pos: "RB", text: "The {team} running back, {player}, gained {dividend} yards in {divisor} carries. What was his average gain per carry?" },
+                { pos: "QB", text: "The {team} team, led by quarterback {player}, scored {dividend} points in {divisor} games. How many points did they average per game?" },
+                { pos: "QB", text: "The {team} quarterback, {player}, threw for {dividend} yards and completed {divisor} passes. What was the average yards per completion?" }
+            ],
+            2: [
+                { pos: "QB", text: "The {team} offense, featuring quarterback {player}, gained a total of {dividend} yards over {divisor} plays. What was their average gain per play?" },
+                { pos: "QB", text: "The {team} stadium has {dividend} seats, arranged in {divisor} equal sections for quarterback {player}'s fans. How many seats are in each section?" },
+                { pos: "RB", text: "The coach for the {team} divided his team of {dividend} players, including running back {player}, into {divisor} groups for a drill. How many players were in each group?" }
+            ],
+            3: [
+                { pos: "QB", text: "Quarterback {player} and the {team} sold {dividend} tickets for a fundraiser, with each ticket costing {divisor} dollars. How many tickets did they sell?" },
+                { pos: "QB", text: "The {team} quarterback, {player}, has a total of {dividend} career passing yards over {divisor} games. What is his average passing yards per game?" },
+                { pos: "RB", text: "A stadium grounds crew for the {team} is painting a line of {dividend} yards. They have a machine that can paint {divisor} yards per minute for a game featuring running back {player}. How long will it take to paint the entire line?" }
+            ]
+        };
+
+        const getHints = (problem) => {
+            const hints = [
+                `Hint 1: The problem is asking you to find out how many times ${problem.divisor} goes into ${problem.dividend}.`,
+                `Hint 2: The equation is ${problem.dividend} \u00F7 ${problem.divisor} = ?. Think of how many groups of ${problem.divisor} you can make.`,
+                `Hint 3: You can use long division to solve this! How many times does ${problem.divisor} fit into ${problem.dividend}?`
+            ];
+            return hints;
+        };
+
+        const generateProblem = () => {
+            const { difficulty } = gameState;
+            const levelConfig = difficultyLevels[Math.min(difficulty, 3)];
+            
+            const teams = Object.keys(nflTeams);
+            const randomTeamName = teams[Math.floor(Math.random() * teams.length)];
+            const teamData = nflTeams[randomTeamName];
+
+            const levelTemplates = templates[Math.min(difficulty, 3)];
+            const randomTemplateIndex = Math.floor(Math.random() * levelTemplates.length);
+            const template = levelTemplates[randomTemplateIndex];
+            
+            const requiredPosition = template.pos;
+            const randomPlayer = teamData.players[requiredPosition];
+
+
+            let dividend, divisor;
+
+            do {
+                divisor = Math.floor(Math.random() * (levelConfig.maxDivisor - 2)) + 2;
+                dividend = Math.floor(Math.random() * (levelConfig.maxDividend - divisor)) + divisor;
+            } while (dividend % divisor !== 0 && difficulty === 1);
+
+            const question = template.text.replace("{dividend}", dividend).replace("{divisor}", divisor).replace("{team}", randomTeamName).replace("{player}", randomPlayer);
+            
+            gameState.currentProblem = {
+                question: question,
+                answer: dividend / divisor,
+                hints: getHints({ dividend, divisor }),
+                team: randomTeamName
+            };
+            gameState.hintsGiven = 0;
+            // Removed reset of questionAudioPlayed
+            updateUI();
+        };
+
+        const updateUI = () => {
+            scoreText.textContent = `Score: ${gameState.score}`;
+            questionText.textContent = gameState.currentProblem.question;
+            hintText.textContent = '';
+            answerInput.value = '';
+        };
+
+        const showMessageBox = (text) => {
+            messageBoxText.textContent = text;
+            messageBox.style.display = 'flex';
+        };
+
+        const hideMessageBox = () => {
+            messageBox.style.display = 'none';
+        };
+
+        // --- AUDIO FUNCTIONS ARE REMOVED OR SIMPLIFIED ---
+
+        // Helper functions for audio processing are removed as they are no longer needed for the play button/TTS.
+        // We only keep the minimal necessary logic for the correct answer celebration audio.
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcm16, sampleRate) {
+            const pcmData = pcm16.buffer;
+            const buffer = new ArrayBuffer(44 + pcmData.byteLength);
+            const view = new DataView(buffer);
+
+            function writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+
+            let offset = 0;
+            writeString(view, offset, 'RIFF'); offset += 4;
+            view.setUint32(offset, 36 + pcmData.byteLength, true); offset += 4;
+            writeString(view, offset, 'WAVE'); offset += 4;
+            writeString(view, offset, 'fmt '); offset += 4;
+            view.setUint32(offset, 16, true); offset += 4;
+            view.setUint16(offset, 1, true); offset += 2;
+            view.setUint16(offset, 1, true); offset += 2;
+            view.setUint32(offset, sampleRate, true); offset += 4;
+            view.setUint32(offset, sampleRate * 2, true); offset += 4;
+            view.setUint16(offset, 2, true); offset += 2;
+            view.setUint16(offset, 16, true); offset += 2;
+            writeString(view, offset, 'data'); offset += 4;
+            view.setUint32(offset, pcmData.byteLength, true); offset += 4;
+            
+            new Uint8Array(buffer, offset).set(new Uint8Array(pcmData));
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        const playAudio = async (textPrompt, voice = "Fenrir") => {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: textPrompt }]
+                }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: voice }
+                        }
+                    }
+                },
+                model: "gemini-2.5-flash-preview-tts"
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+
+                    audio.onended = () => URL.revokeObjectURL(audioUrl);
+                }
+            } catch (error) {
+                console.error("Error playing audio:", error);
+            }
+        };
+
+        // --- ANIMATION AND GAME LOGIC ---
+        
+        const animateCorrectAnswer = () => {
+            gameCanvas.style.display = 'block';
+            const footballStartX = 50;
+            const footballStartY = gameCanvas.height - 50;
+            const footballEndX = gameCanvas.width - 50;
+            const footballEndY = 50;
+            const footballControlPointX = gameCanvas.width / 2;
+            const footballControlPointY = gameCanvas.height / 3;
+
+            const animationDuration = 3000;
+            let startTime = null;
+
+            const footballColor = '#8D4D2E';
+            const lacesColor = 'white';
+
+            function drawFootball(x, y, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 40, 20, 0, 0, 2 * Math.PI);
+                ctx.fillStyle = footballColor;
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(-15, 0);
+                ctx.lineTo(15, 0);
+                ctx.strokeStyle = lacesColor;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                for (let i = -1; i <= 1; i += 2) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, i * 10);
+                    ctx.lineTo(0, i * 15);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = timestamp - startTime;
+                const t = Math.min(progress / animationDuration, 1);
+
+                const footballX = Math.pow(1 - t, 2) * footballStartX + 2 * (1 - t) * t * footballControlPointX + Math.pow(t, 2) * footballEndX;
+                const footballY = Math.pow(1 - t, 2) * footballStartY + 2 * (1 - t) * t * footballControlPointY + Math.pow(t, 2) * footballEndY;
+                const rotation = Math.PI / 4 + (footballX / gameCanvas.width) * 2 * Math.PI;
+
+                ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+                
+                drawFootball(footballX, footballY, rotation);
+
+                if (t < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    gameCanvas.style.display = 'none';
+                    setTimeout(() => generateProblem(), 1000);
+                }
+            }
+            requestAnimationFrame(animate);
+            const teamVoice = teamVoices[gameState.currentProblem.team] || "Fenrir";
+            playAudio(`Go ${gameState.currentProblem.team}!`, teamVoice);
+        };
+
+        const checkAnswer = () => {
+            const userAnswer = parseFloat(answerInput.value);
+            if (isNaN(userAnswer)) {
+                showMessageBox("Please enter a number.");
+                return;
+            }
+
+            if (userAnswer === gameState.currentProblem.answer) {
+                gameState.score++;
+                gameState.questionsSolved++;
+                if (gameState.questionsSolved % 5 === 0) {
+                    gameState.difficulty++;
+                    showMessageBox(`Great job! You've advanced to a new difficulty level!`);
+                } else {
+                    showMessageBox("Correct! Touchdown!");
+                }
+                animateCorrectAnswer();
+            } else {
+                showMessageBox("Incorrect. Try again.");
+            }
+        };
+
+        const handleHint = () => {
+            if (gameState.hintsGiven < 3) {
+                hintText.textContent = gameState.currentProblem.hints[gameState.hintsGiven];
+                gameState.hintsGiven++;
+            } else {
+                hintText.textContent = "You've used all the hints for this question. Try your best to solve it!";
+            }
+        };
+        
+        const handleResize = () => {
+            gameCanvas.width = gameCanvas.offsetWidth;
+            gameCanvas.height = gameCanvas.offsetHeight;
+        };
+
+        submitBtn.addEventListener('click', checkAnswer);
+        hintBtn.addEventListener('click', handleHint);
+        messageBoxBtn.addEventListener('click', hideMessageBox);
+        // Removed click handler for playBtn
+        
+        answerInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        window.addEventListener('resize', handleResize);
+        window.onload = () => {
+            handleResize();
+            generateProblem();
+        };
+    });
+</script>
+</body>
+</html>
